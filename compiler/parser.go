@@ -85,6 +85,7 @@ func toUpper(s string) string {
 	return string(r)
 }
 
+// HasResponse returns true if the method returns results, false otherwise
 func (m *Method) HasResponse() bool {
 	if m.Async && len(m.RetVals()) == 0 {
 		return false
@@ -139,8 +140,11 @@ var actorInterface = ActorInterface{
 	Ref:   "Ref",
 }
 
+// excludeMethods contains a list of methods that will be ignored by the generator
 var excludedMethods = map[string]bool{"init": true, "InCapacity": true}
 
+// parseStruct parses a struct in the input file and checks if it's an actor declariation.
+// If it is it adds the identified actor to the actors map passed as parameter
 func parseStruct(name string, t *types.Struct, actors map[string]*Actor) {
 	if t.NumFields() == 0 {
 		return
@@ -168,6 +172,8 @@ func parseStruct(name string, t *types.Struct, actors map[string]*Actor) {
 	}
 }
 
+// checkImport checks if a type used in a declarion in the input file needs to be imported
+// in which case it adds it to the imports map passed as parameter
 func checkImport(imports map[string]bool, typeName string) {
 	idx := strings.Index(typeName, ".")
 	if idx == -1 {
@@ -181,6 +187,7 @@ func checkImport(imports map[string]bool, typeName string) {
 	}
 }
 
+// type name separates the path from the type name
 func typeName(t types.Type) string {
 	s := t.String()
 	idx := strings.LastIndex(s, "/")
@@ -191,6 +198,8 @@ func typeName(t types.Type) string {
 	return string(r[idx+1:])
 }
 
+// parse package parses the input file and obtains all the program types using
+// the go/types conf.Check method
 func parsePackage(src string) (Package, error) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, "src.go", src, 0)
@@ -240,6 +249,7 @@ func parsePackage(src string) (Package, error) {
 	return result, nil
 }
 
+// readSrc reads the source file and returs a string with the file contents
 func readSrc(fileName string) (string, error) {
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -271,6 +281,9 @@ func stripFirst(s string) string {
 	return string(r[1:])
 }
 
+// parseMethod parses the string containeng the source code read from the source file and
+// visits all the function nodes. If the function is an actor method, the function signature
+// is extracted, stored in a Method struct and added to the corresponding actor
 func parseMethods(f *ast.File, src string, imports map[string]bool, actors map[string]*Actor, init string) {
 	offset := f.Pos()
 	ast.Inspect(f, func(n ast.Node) bool {
